@@ -11,7 +11,8 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      //Backend Filler URL
+      //Backend Filler URL with POST request
+      //This call should be checking if it exists in DB 
       const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

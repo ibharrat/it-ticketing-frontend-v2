@@ -5,11 +5,31 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignup = (e) => {
+const handleSignup = async (e) => {
     e.preventDefault();
     console.log("Signup attempt:", { email, password });
 
-    //add POST api here to add the new login to the database
+    try {
+      //POST request with Backend Filler URL
+      //This should check if exists in DB and if not add the account to DB
+      const response = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Account created, Proceed to Login");
+        navigate('/'); 
+      } else {
+        alert(data.message || "Signup failed");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Server Error");
+    }
   };
 
   return (
