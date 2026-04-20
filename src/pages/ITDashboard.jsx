@@ -1,32 +1,80 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ITDashboard() {
-  const [allTickets, setAllTickets] = useState([
-    { id: 1, problem: 'Printer jammed', user: 'bob@work.com' },
-    { id: 2, problem: 'Password reset', user: 'sarah@work.com' }
-  ]);
-  
+  const [allTickets, setAllTickets] = useState([]);
   const [myTickets, setMyTickets] = useState([]);
 
-  //add GET api to fetch unassigned tickets and tickets currently assigned to IT worker
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': `Bearer ${token}` };
 
-  const assignToMe = (ticket) => {
-    setAllTickets(allTickets.filter(t => t.id !== ticket.id));
-    setMyTickets([...myTickets, { ...ticket, status: 'Open' }]);
-    //add PUT api here to update ticket to be assigned to worker
+        const unassignedRes = await fetch('http://localhost:5000/api/tickets/unassigned', { headers });
+        if (unassignedRes.ok) {
+          const unassignedData = await unassignedRes.json();
+          setAllTickets(unassignedData);
+        }
+
+        const assignedRes = await fetch('http://localhost:5000/api/tickets/assigned', { headers });
+        if (assignedRes.ok) {
+          const assignedData = await assignedRes.json();
+          setMyTickets(assignedData);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const assignToMe = async (ticket) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/tickets/${ticket.id}/assign`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setAllTickets(allTickets.filter(t => t.id !== ticket.id));
+        setMyTickets([...myTickets, { ...ticket, status: 'Open' }]);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-  const closeTicket = (id) => {
-    setMyTickets(myTickets.map(t => 
-      t.id === id ? { ...t, status: 'Closed' } : t
-    ));
-    //add PUT api here to update ticket to be closed
+  const closeTicket = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/tickets/${id}/close`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setMyTickets(myTickets.map(t => 
+          t.id === id ? { ...t, status: 'Closed' } : t
+        ));
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-8">
       <div className="max-w-3xl mx-auto flex flex-col gap-8">
         <h1 className="text-3xl font-bold">IT Dashboard</h1>
+        
         <div className="flex flex-col gap-4">
           <h2 className="text-xl text-zinc-500">Unassigned Tickets</h2>
           {allTickets.map(ticket => (
@@ -43,6 +91,7 @@ export default function ITDashboard() {
             </div>
           ))}
         </div>
+
         <div className="flex flex-col gap-4">
           <h2 className="text-xl text-sky-400">My Workspace</h2>
           {myTickets.map(ticket => (
